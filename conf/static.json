@@ -1,6 +1,6 @@
 {
-    "begin_year": 2011,
-    "end_year": 2017,
+    "begin_year": 2021,
+    "end_year": 2021,
     "dropout": 0.1,
     "lr": 0.01,
     "batch_size": 128,
@@ -12,11 +12,11 @@
     "train": 0,
     "y_len": 12,
     "x_len": 12,
-    "data_process": 0,
+    "data_process": 1,
     "auto_test": 1,
-    "raw_data_path": "data/district3F11T17/finaldata/",
+    "raw_data_path": "data/BAST_Data/",
     "save_data_path": "data/district3F11T17/FastData/",
-    "graph_path": "data/district3F11T17/graph/",
+    "graph_path": "data/BAST_Graph/",
     "model_path": "res/district3F11T17/",
     "gcn":{
         "in_channel": 12,
