@@ -37,6 +37,9 @@ import shutil
 sys.path.append("src/")
 
 
+import warnings
+warnings.filterwarnings("ignore")
+
 result = {3: {"mae": {}, "mape": {}, "rmse": {}}, 6: {"mae": {},
                                                       "mape": {}, "rmse": {}}, 12: {"mae": {}, "mape": {}, "rmse": {}}}
 pin_memory = True
@@ -131,15 +134,23 @@ def train(inputs, args):
 
     # Dataset Definition
     if args.strategy == 'incremental' and args.year > args.begin_year:
-        train_loader = DataLoader(TrafficDataset("", "", x=inputs["train_x"][:, :, args.subgraph.numpy()], y=inputs["train_y"][:, :, args.subgraph.numpy()],
-                                                 edge_index="", mode="subgraph"), batch_size=args.batch_size, shuffle=True, pin_memory=pin_memory, num_workers=n_work)
-        val_loader = DataLoader(TrafficDataset("", "", x=inputs["val_x"][:, :, args.subgraph.numpy()], y=inputs["val_y"][:, :, args.subgraph.numpy()],
-                                               edge_index="", mode="subgraph"), batch_size=args.batch_size, shuffle=False, pin_memory=pin_memory, num_workers=n_work)
+        train_loader = DataLoader(TrafficDataset("", "", x=inputs["train_x"][:, :, args.subgraph.numpy()], 
+                                                    y=inputs["train_y"][:, :, args.subgraph.numpy()],
+                                                 edge_index="", mode="subgraph"),
+                                                  batch_size=args.batch_size, shuffle=True, 
+                                                  pin_memory=pin_memory, num_workers=n_work)
+        val_loader = DataLoader(TrafficDataset("", "", x=inputs["val_x"][:, :, args.subgraph.numpy()], 
+                                                y=inputs["val_y"][:, :, args.subgraph.numpy()],
+                                               edge_index="", mode="subgraph"), 
+                                               batch_size=args.batch_size, shuffle=False, 
+                                               pin_memory=pin_memory, num_workers=n_work)
         graph = nx.Graph()
         graph.add_nodes_from(range(args.subgraph.size(0)))
         graph.add_edges_from(args.subgraph_edge_index.numpy().T)
         adj = nx.to_numpy_array(graph)
         adj = adj / (np.sum(adj, 1, keepdims=True) + 1e-6)
+        print("adjintrain")
+        print(adj.shape)
         vars(args)["sub_adj"] = torch.from_numpy(
             adj).to(torch.float).to(args.device)
     else:
@@ -166,7 +177,6 @@ def train(inputs, args):
         else:
             model = gnn_model
     else:
-        # gnn_model, _ = load_best_model(args)
         gnn_model = Basic_Model(args).to(args.device)
         gnn_model.to(args.device)
         model = gnn_model
@@ -328,6 +338,8 @@ def main(args):
         adj = np.load(osp.join(args.graph_path,
                       str(args.year)+"_adj.npz"))["x"]
         adj = adj / (np.sum(adj, 1, keepdims=True) + 1e-6)
+        print('adj at start loop')
+        print(adj.shape)
         vars(args)["adj"] = torch.from_numpy(
             adj).to(torch.float).to(args.device)
 
@@ -346,11 +358,13 @@ def main(args):
             node_list = list()
             # Obtain increase nodes
             if args.increase:
+                print(len(node_list))
                 cur_node_size = np.load(
                     osp.join(args.graph_path, str(year)+"_adj.npz"))["x"].shape[0]
                 pre_node_size = np.load(
                     osp.join(args.graph_path, str(year-1)+"_adj.npz"))["x"].shape[0]
                 node_list.extend(list(range(pre_node_size, cur_node_size)))
+                print(len(node_list))
 
             # Obtain influence nodes
             if args.detect:
@@ -364,6 +378,7 @@ def main(args):
                     np.load(osp.join(args.graph_path, str(year-1)+"_adj.npz"))["x"]).edges)).T
                 cur_graph = np.array(list(nx.from_numpy_matrix(
                     np.load(osp.join(args.graph_path, str(year)+"_adj.npz"))["x"]).edges)).T
+                print(pre_graph.shape, cur_graph.shape)
                 # 20% of current graph size will be sampled
                 vars(args)["topk"] = int(0.01*args.graph_size)
                 influence_node_list = detect.influence_node_selection(
@@ -384,6 +399,7 @@ def main(args):
             if len(node_list) > int(0.1*args.graph_size):
                 node_list = random.sample(node_list, int(0.1*args.graph_size))
 
+            print(len(node_list))
             # Obtain subgraph of node list
             cur_graph = torch.LongTensor(np.array(list(nx.from_numpy_matrix(
                 np.load(osp.join(args.graph_path, str(year)+"_adj.npz"))["x"]).edges)).T)
@@ -394,6 +410,8 @@ def main(args):
                 graph_node_from_edge.add(u)
                 graph_node_from_edge.add(v)
             node_list = list(set(node_list) & graph_node_from_edge)
+            print(len(node_list))
+
 
             if len(node_list) != 0:
                 subgraph, subgraph_edge_index, mapping, _ = k_hop_subgraph(

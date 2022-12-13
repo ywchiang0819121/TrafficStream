@@ -26,6 +26,7 @@ class Basic_Model(nn.Module):
         N = adj.shape[0]
         
         x = data.x.reshape((-1, N, self.args.gcn["in_channel"]))   # [bs, N, feature]
+        print(x.shape)
         x = F.relu(self.gcn1(x, adj))                              # [bs, N, feature]
         x = x.reshape((-1, 1, self.args.gcn["hidden_channel"]))    # [bs * N, 1, feature]
 
