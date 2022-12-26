@@ -484,8 +484,7 @@ if __name__ == "__main__":
     init(args)
     seed_set(13)
 
-    device = torch.device("cuda:{}".format(
-        args.gpuid)) if torch.cuda.is_available() and args.gpuid != -1 else "cpu"
+    device = torch.device("cuda") if torch.cuda.is_available() and args.gpuid != -1 else "cpu"
     
     print(device)
     vars(args)["device"] = device
