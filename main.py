@@ -205,16 +205,19 @@ def train(inputs, args):
                 args.logger.info("node number {}".format(data.x.shape))
             data = data.to(device, non_blocking=pin_memory)
             optimizer.zero_grad()
+            # print(args.sub_adj)
             pred = model(data, args.sub_adj)
 
             if args.strategy == "incremental" and args.year > args.begin_year:
-                pred, _ = to_dense_batch(pred, batch=data.batch)
-                data.y, _ = to_dense_batch(data.y, batch=data.batch)
+                # print(pred.size(), data.y.size())
+                # pred, _ = to_dense_batch(pred, batch=data.batch)
+                # data.y, _ = to_dense_batch(data.y, batch=data.batch)
+                # print(pred.size(), data.y.size())
                 pred = pred[:, args.mapping, :]
                 data.y = data.y[:, args.mapping, :]
                 
-            
             loss = lossfunc(data.y, pred, reduction="mean")
+            # loss = lossfunc(data.y.resize(pred.size(0), pred.size(1)), pred, reduction="mean")
             # loss = lossfunc(data.y, pred, log_input=False, full=False, size_average=True, eps=1e-4, reduction='mean')
             if args.ewc and args.year > args.begin_year:
                 loss += model.compute_consolidation_loss()
@@ -239,8 +242,8 @@ def train(inputs, args):
                 data = data.to(device, non_blocking=pin_memory)
                 pred = model(data, args.sub_adj)
                 if args.strategy == "incremental" and args.year > args.begin_year:
-                    pred, _ = to_dense_batch(pred, batch=data.batch)
-                    data.y, _ = to_dense_batch(data.y, batch=data.batch)
+                    # pred, _ = to_dense_batch(pred, batch=data.batch)
+                    # data.y, _ = to_dense_batch(data.y, batch=data.batch)
                     pred = pred[:, args.mapping, :]
                     data.y = data.y[:, args.mapping, :]
                 loss = masked_mae_np(
@@ -261,6 +264,7 @@ def train(inputs, args):
             counter += 1
             if counter > patience:
                 break
+        # break
 
     best_model_path = osp.join(path, str(lowest_validation_loss)+".pkl")
     best_model = Basic_Model(args)
@@ -286,7 +290,8 @@ def test_model(model, args, testset, pin_memory):
         for data in testset:
             data = data.to(args.device, non_blocking=pin_memory)
             pred = model(data, args.adj)
-            loss += func.mse_loss(data.y, pred, reduction="mean")
+            loss += func.mse_loss(data.y,
+                                pred, reduction="mean")
             pred, _ = to_dense_batch(pred, batch=data.batch)
             data.y, _ = to_dense_batch(data.y, batch=data.batch)
             pred_.append(pred.cpu().data.numpy())
@@ -358,13 +363,13 @@ def main(args):
             node_list = list()
             # Obtain increase nodes
             if args.increase:
-                print(len(node_list))
+                # print(len(node_list))
                 cur_node_size = np.load(
                     osp.join(args.graph_path, str(year)+"_adj.npz"))["x"].shape[0]
                 pre_node_size = np.load(
                     osp.join(args.graph_path, str(year-1)+"_adj.npz"))["x"].shape[0]
                 node_list.extend(list(range(pre_node_size, cur_node_size)))
-                print(len(node_list))
+                # print(len(node_list))
 
             # Obtain influence nodes
             if args.detect:
@@ -378,7 +383,7 @@ def main(args):
                     np.load(osp.join(args.graph_path, str(year-1)+"_adj.npz"))["x"]).edges)).T
                 cur_graph = np.array(list(nx.from_numpy_matrix(
                     np.load(osp.join(args.graph_path, str(year)+"_adj.npz"))["x"]).edges)).T
-                print(pre_graph.shape, cur_graph.shape)
+                # print(pre_graph.shape, cur_graph.shape)
                 # 20% of current graph size will be sampled
                 vars(args)["topk"] = int(0.01*args.graph_size)
                 influence_node_list = detect.influence_node_selection(
@@ -399,7 +404,7 @@ def main(args):
             if len(node_list) > int(0.1*args.graph_size):
                 node_list = random.sample(node_list, int(0.1*args.graph_size))
 
-            print(len(node_list))
+            # print(len(node_list))
             # Obtain subgraph of node list
             cur_graph = torch.LongTensor(np.array(list(nx.from_numpy_matrix(
                 np.load(osp.join(args.graph_path, str(year)+"_adj.npz"))["x"]).edges)).T)
@@ -410,7 +415,7 @@ def main(args):
                 graph_node_from_edge.add(u)
                 graph_node_from_edge.add(v)
             node_list = list(set(node_list) & graph_node_from_edge)
-            print(len(node_list))
+            # print(len(node_list))
 
 
             if len(node_list) != 0:
@@ -438,6 +443,7 @@ def main(args):
             continue
 
         if args.train:
+            # continue
             train(inputs, args)
         else:
             if args.auto_test:
@@ -467,7 +473,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--conf", type=str, default="conf/test.json")
-    parser.add_argument("--paral", type=int, default=0)
+    parser.add_argument("--paral", type=int, default=1)
     parser.add_argument("--gpuid", type=int, default=2)
     parser.add_argument("--logname", type=str, default="info")
     parser.add_argument("--load_first_year", type=int, default=0,

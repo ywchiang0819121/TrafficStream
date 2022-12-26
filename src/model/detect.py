@@ -14,12 +14,13 @@ import os.path as osp
 
 def get_feature(data, graph, args, model, adj):
     node_size = data.shape[1]
-    data = np.reshape(data[-288*7-1:-1,:], (-1, args.x_len, node_size))
+    data = np.reshape(data[-24*7-1:-1,:], (-1, args.x_len, node_size))
     dataloader = DataLoader(continue_learning_Dataset(data), batch_size=data.shape[0], shuffle=False, pin_memory=True, num_workers=3)
     # feature shape [T', feature_dim, N]
     for data in dataloader:
         data = data.to(args.device, non_blocking=True)
-        feature, _ = to_dense_batch(model.feature(data, adj), batch=data.batch)
+        feature = model.feature(data, adj)
+        # feature, _ = to_dense_batch(out, batch=data.batch)
         node_size = feature.size()[1]
         # print("before permute:", feature.size())
         feature = feature.permute(1,0,2)

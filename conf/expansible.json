@@ -1,12 +1,12 @@
 {
-    "begin_year": 2021,
+    "begin_year": 2017,
     "end_year": 2021,
     "dropout": 0.1,
     "lr": 0.02,
-    "batch_size": 8192,
+    "batch_size":128,
     "epoch": 500,
     "gpuid": 0,
-    "loss": "huber",
+    "loss": "mse",
     "activation": "relu",
     "scheduler": "epo",
     "train": 1,
@@ -17,10 +17,10 @@
     "raw_data_path": "data/BAST_Data/",
     "save_data_path": "data/BAST_FastData/",
     "graph_path": "data/BAST_Graph/",
-    "model_path": "res/",
+    "model_path": "res/BAST_expansible",
     "gcn":{
-        "in_channel": 12,
-        "out_channel": 12,
+        "in_channel": 24,
+        "out_channel": 24,
         "hidden_channel": 256
     },
 

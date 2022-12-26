@@ -17,7 +17,7 @@ class Basic_Model(nn.Module):
         self.gcn2 = BatchGCNConv(args.gcn["hidden_channel"], args.gcn["out_channel"], bias=True, gcn=False)
         self.tcn1 = nn.Conv1d(in_channels=args.tcn["in_channel"], out_channels=args.tcn["out_channel"], kernel_size=args.tcn["kernel_size"], \
             dilation=args.tcn["dilation"], padding=int((args.tcn["kernel_size"]-1)*args.tcn["dilation"]/2))
-        self.fc = nn.Linear(args.gcn["out_channel"], args.y_len)
+        self.fc = nn.Linear(args.gcn["out_channel"], args.y_len*2)
         self.activation = nn.GELU()
 
         self.args = args
@@ -26,7 +26,7 @@ class Basic_Model(nn.Module):
         N = adj.shape[0]
         
         x = data.x.reshape((-1, N, self.args.gcn["in_channel"]))   # [bs, N, feature]
-        print(x.shape)
+        # print(x.shape)
         x = F.relu(self.gcn1(x, adj))                              # [bs, N, feature]
         x = x.reshape((-1, 1, self.args.gcn["hidden_channel"]))    # [bs * N, 1, feature]
 
@@ -36,9 +36,10 @@ class Basic_Model(nn.Module):
         x = self.gcn2(x, adj)                                      # [bs, N, feature]
         x = x.reshape((-1, self.args.gcn["out_channel"]))          # [bs * N, feature]
         
-        x = x + data.x
+        x = x + data.x.reshape(x.size(0), x.size(1))
         x = self.fc(self.activation(x))
         x = F.dropout(x, p=self.dropout, training=self.training)
+        x = x.view(-1 , N, 12)
         return x
 
  
@@ -55,5 +56,7 @@ class Basic_Model(nn.Module):
         x = self.gcn2(x, adj)                                      # [bs, N, feature]
         x = x.reshape((-1, self.args.gcn["out_channel"]))          # [bs * N, feature]
         
-        x = x + data.x
+        x = x + data.x.reshape(x.size(0), x.size(1))
+        x = x.view(-1 , N, 12)
+        # print(x.size())
         return x

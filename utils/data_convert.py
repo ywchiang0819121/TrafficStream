@@ -25,15 +25,15 @@ def generate_dataset(data, idx, x_len=12, y_len=12):
 
     x_index = np.asarray(x_index)
     y_index = np.asarray(y_index)
-    x = res[x_index].reshape((-1, x_len, node_size))
-    y = res[y_index].reshape((-1, y_len, node_size))
- 
+    x = res[x_index].reshape((-1, x_len, node_size, 2))
+    y = res[y_index].reshape((-1, y_len, node_size,2))
+
     return x, y
 
 def generate_samples(days, savepath, data, graph, train_rate=0.6, val_rate=0.2, test_rate=0.2, val_test_mix=False):
     edge_index = np.array(list(graph.edges)).T
     del graph
-    data = data[0:days*24, :]
+    data = data[0:days*24, :, :]
     t, n = data.shape[0], data.shape[1]
     
     train_idx = [i for i in range(int(t*train_rate))]
